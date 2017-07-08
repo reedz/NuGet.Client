@@ -478,23 +478,6 @@ function Test-BuildIntegratedParentProjectIsRestoredAfterInstallWithClassLibInTr
     Assert-ProjectJsonLockFilePackage $project1 NuGet.Versioning 1.0.7
 }
 
-function Test-BuildIntegratedClean {
-    # Arrange
-    $project = New-BuildIntegratedProj UAPApp
-
-    Install-Package NuGet.Versioning -ProjectName $project.Name -version 1.0.7
-    Build-Solution
-    
-    Assert-ProjectCacheFileExists $project
-
-    #Act
-    Clean-Solution
-
-    #Assert
-    Assert-ProjectCacheFileNotExists $project
-}
-
-
 function Test-InconsistencyBetweenAssetsAndProjectFile{
     [SkipTestForVS14()]
     param()
