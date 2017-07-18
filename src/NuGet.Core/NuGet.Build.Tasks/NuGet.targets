@@ -1,4 +1,4 @@
-<!--
+﻿<!--
 ***********************************************************************************************
 NuGet.targets
 
@@ -454,8 +454,6 @@ Copyright (c) .NET Foundation. All rights reserved.
      RestoreFallbackFolders="$(RestoreFallbackFolders)"
      RestoreConfigFile="$(RestoreConfigFile)"
      RestoreSolutionDirectory="$(RestoreSolutionDirectory)"
-     RestoreAdditionalProjectFallbackFolders="$(RestoreAdditionalProjectFallbackFolders)"
-     RestoreAdditionalProjectSources="$(RestoreAdditionalProjectSources)"
      RestorePackagesPathOverride="$(_RestorePackagesPathOverride)"
      RestoreSourcesOverride="$(_RestoreSourcesOverride)"
      RestoreFallbackFoldersOverride="$(_RestoreFallbackFoldersOverride)"
@@ -677,6 +675,9 @@ Copyright (c) .NET Foundation. All rights reserved.
         <PackageTargetFallback>$(PackageTargetFallback)</PackageTargetFallback>
         <AssetTargetFallback>$(AssetTargetFallback)</AssetTargetFallback>
         <TargetFramework>$(TargetFramework)</TargetFramework>
+        <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources)</RestoreAdditionalProjectSources>
+        <RestoreAdditionalProjectFallbackFolders>$(RestoreAdditionalProjectFallbackFolders)</RestoreAdditionalProjectFallbackFolders>
+        <RestoreAdditionalProjectFallbackFoldersExcludes>$(RestoreAdditionalProjectFallbackFoldersExcludes)</RestoreAdditionalProjectFallbackFoldersExcludes>
       </_RestoreGraphEntry>
     </ItemGroup>
   </Target>

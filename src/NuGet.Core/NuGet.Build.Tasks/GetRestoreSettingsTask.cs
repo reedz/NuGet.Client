@@ -14,8 +14,9 @@ using NuGet.Configuration;
 namespace NuGet.Build.Tasks
 {
     /// <summary>
-    /// Get all the settings to be used for project restore.
+    /// Get settings to be used for project restore.
     /// </summary>
+    /// <remarks>Additional sources/fallback folders are added after all frameworks are read.</remarks>
     public class GetRestoreSettingsTask : Task
     {
         [Required]
@@ -30,10 +31,6 @@ namespace NuGet.Build.Tasks
         public string RestoreConfigFile { get; set; }
 
         public string RestoreSolutionDirectory { get; set; }
-
-        public string[] RestoreAdditionalProjectSources { get; set; }
-
-        public string[] RestoreAdditionalProjectFallbackFolders { get; set; }
 
         /// <summary>
         /// Command line value of RestorePackagesPath
@@ -84,8 +81,6 @@ namespace NuGet.Build.Tasks
             BuildTasksUtility.LogInputParam(log, nameof(RestoreFallbackFolders), RestoreFallbackFolders);
             BuildTasksUtility.LogInputParam(log, nameof(RestoreConfigFile), RestoreConfigFile);
             BuildTasksUtility.LogInputParam(log, nameof(RestoreSolutionDirectory), RestoreSolutionDirectory);
-            BuildTasksUtility.LogInputParam(log, nameof(RestoreAdditionalProjectSources), RestoreAdditionalProjectSources);
-            BuildTasksUtility.LogInputParam(log, nameof(RestoreAdditionalProjectFallbackFolders), RestoreAdditionalProjectFallbackFolders);
             BuildTasksUtility.LogInputParam(log, nameof(RestorePackagesPathOverride), RestorePackagesPathOverride);
             BuildTasksUtility.LogInputParam(log, nameof(RestoreSourcesOverride), RestoreSourcesOverride);
             BuildTasksUtility.LogInputParam(log, nameof(RestoreFallbackFoldersOverride), RestoreFallbackFoldersOverride);
@@ -118,25 +113,18 @@ namespace NuGet.Build.Tasks
                     () => SettingsUtility.GetGlobalPackagesFolder(settings));
 
                 // Sources
-                var currentSources = RestoreSettingsUtils.GetValue(
+                OutputSources = RestoreSettingsUtils.GetValue(
                     () => RestoreSourcesOverride?.Select(MSBuildRestoreUtility.FixSourcePath).Select(e => UriUtility.GetAbsolutePath(MSBuildStartupDirectory, e)).ToArray(),
                     () => MSBuildRestoreUtility.ContainsClearKeyword(RestoreSources) ? new string[0] : null,
                     () => RestoreSources?.Select(MSBuildRestoreUtility.FixSourcePath).Select(e => UriUtility.GetAbsolutePathFromFile(ProjectUniqueName, e)).ToArray(),
                     () => (new PackageSourceProvider(settings)).LoadPackageSources().Select(e => e.Source).ToArray());
 
-                // Append additional sources
-                // Escape strings to avoid xplat path issues with msbuild.
-                OutputSources = AppendItems(currentSources, RestoreAdditionalProjectSources?.Select(MSBuildRestoreUtility.FixSourcePath).ToArray());
-
                 // Fallback folders
-                var currentFallbackFolders = RestoreSettingsUtils.GetValue(
+                OutputFallbackFolders = RestoreSettingsUtils.GetValue(
                     () => RestoreFallbackFoldersOverride?.Select(e => UriUtility.GetAbsolutePath(MSBuildStartupDirectory, e)).ToArray(),
                     () => MSBuildRestoreUtility.ContainsClearKeyword(RestoreFallbackFolders) ? new string[0] : null,
                     () => RestoreFallbackFolders?.Select(e => UriUtility.GetAbsolutePathFromFile(ProjectUniqueName, e)).ToArray(),
                     () => SettingsUtility.GetFallbackPackageFolders(settings).ToArray());
-
-                // Append additional fallback folders
-                OutputFallbackFolders = AppendItems(currentFallbackFolders, RestoreAdditionalProjectFallbackFolders);
             }
             catch (Exception ex)
             {
@@ -152,19 +140,6 @@ namespace NuGet.Build.Tasks
             BuildTasksUtility.LogOutputParam(log, nameof(OutputConfigFilePaths), OutputConfigFilePaths);
 
             return true;
-        }
-
-        private string[] AppendItems(string[] current, string[] additional)
-        {
-            if (additional == null || additional.Length == 0)
-            {
-                // noop
-                return current;
-            }
-
-            var additionalAbsolute = additional.Select(e => UriUtility.GetAbsolutePathFromFile(ProjectUniqueName, e));
-
-            return current.Concat(additionalAbsolute).ToArray();
         }
     }
 }

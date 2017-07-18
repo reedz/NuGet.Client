@@ -27,6 +27,7 @@ namespace NuGet.Commands
         public static readonly string Clear = nameof(Clear);
         private static readonly string[] _httpPrefixes = new string[] { "http:", "https:" };
         private const string DoubleSlash = "//";
+        private const string TargetFrameworkInformation = nameof(TargetFrameworkInformation);
 
         /// <summary>
         /// Convert MSBuild items to a DependencyGraphSpec.
@@ -227,6 +228,9 @@ namespace NuGet.Commands
                     // Add PackageTargetFallback
                     AddPackageTargetFallbacks(result, items);
 
+                    // Add additional sources and fallback folders
+                    AddAdditionalSourcesAndFallbackFolders(result, items);
+
                     // Add CrossTargeting flag
                     result.RestoreMetadata.CrossTargeting = IsPropertyTrue(specItem, "CrossTargeting");
 
@@ -348,7 +352,7 @@ namespace NuGet.Commands
 
         private static void AddPackageTargetFallbacks(PackageSpec spec, IEnumerable<IMSBuildItem> items)
         {
-            foreach (var item in GetItemByType(items, "TargetFrameworkInformation"))
+            foreach (var item in GetItemByType(items, TargetFrameworkInformation))
             {
                 var frameworkString = item.GetProperty("TargetFramework");
                 var frameworks = new List<TargetFrameworkInformation>();
@@ -378,6 +382,63 @@ namespace NuGet.Commands
                     // Update the framework appropriately
                     AssetTargetFallbackUtility.ApplyFramework(targetFrameworkInfo, packageTargetFallback, assetTargetFallback);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Remove duplicates and excluded values a set of sources or fallback folders.
+        /// </summary>
+        /// <remarks>Compares with Ordinal, excludes must be exact matches.</remarks>
+        public static IEnumerable<string> AggregateSources(IEnumerable<string> values, IEnumerable<string> excludeValues)
+        {
+            if (values == null)
+            {
+                throw new ArgumentNullException(nameof(values));
+            }
+
+            if (excludeValues == null)
+            {
+                throw new ArgumentNullException(nameof(excludeValues));
+            }
+
+            var result = new SortedSet<string>(values, StringComparer.Ordinal);
+
+            foreach (var exclude in excludeValues)
+            {
+                result.Remove(exclude);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Add additional project sources and project fallback folders.
+        /// </summary>
+        private static void AddAdditionalSourcesAndFallbackFolders(PackageSpec spec, IEnumerable<IMSBuildItem> items)
+        {
+            var additionalSources = new List<string>();
+            var additionalFallbackFolders = new List<string>();
+            var additionalFallbackFolderExcludes = new List<string>();
+
+            // Combine all values across frameworks
+            foreach (var item in GetItemByType(items, TargetFrameworkInformation))
+            {
+                additionalSources.AddRange(MSBuildStringUtility.Split(item.GetProperty("RestoreAdditionalProjectSources")));
+                additionalFallbackFolders.AddRange(MSBuildStringUtility.Split(item.GetProperty("RestoreAdditionalProjectFallbackFolders")));
+                additionalFallbackFolderExcludes.AddRange(MSBuildStringUtility.Split(item.GetProperty("RestoreAdditionalProjectFallbackFoldersExcludes")));
+            }
+
+            // Add additional sources (there are no excludes for sources).
+            foreach (var item in AggregateSources(additionalSources, Enumerable.Empty<string>()))
+            {
+                var pkgSource = new PackageSource(FixSourcePath(item));
+                spec.RestoreMetadata.Sources.Add(pkgSource);
+            }
+
+            // Add additional fallback folders and remove excluded folders.
+            foreach (var item in AggregateSources(additionalFallbackFolders, additionalFallbackFolderExcludes))
+            {
+                spec.RestoreMetadata.FallbackFolders.Add(item);
             }
         }
 
