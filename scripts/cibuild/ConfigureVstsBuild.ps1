@@ -77,8 +77,12 @@ Function Update-BuildNumber {
         [string]$BuildId,
         [string]$BuildNumber
     )
-    $url = "https://devdiv.visualstudio.com/DefaultCollection/devdiv/_apis/build/builds/$BuildId?api-version=2.0" 
-    $b = @{buildNumber = $BuildNumber} | convertto-json 
+    $url = "https://devdiv.visualstudio.com/DefaultCollection/devdiv/_apis/build/builds/{0}?api-version=2.0" -f $BuildId
+    $b = @{
+        buildNumber = $BuildNumber
+        sourceVersion = $env:BUILD_SOURCEVERSION
+    } | convertto-json 
+    Write-Host $b
     $build = Invoke-RestMethod -Uri $url -Method PATCH -Body $b -Headers @{ Authorization = "Bearer $env:SYSTEM_ACCESSTOKEN" } -ContentType "application/json" 
     $build
 }
