@@ -352,11 +352,11 @@
     </PropertyGroup>
 
     <!-- Desktop -->
-    <Exec Command="$(DesktopTestCommand)"
+    <!--Exec Command="$(DesktopTestCommand)"
           ContinueOnError="true"
           Condition=" '$(DesktopInputTestAssemblies)' != '' AND '$(SkipDesktopTests)' != 'true' ">
       <Output TaskParameter="ExitCode" PropertyName="DesktopTestErrorCode"/>
-    </Exec>
+    </Exec-->
 
     <!-- VSTest/NETCore -->
     <Exec Command="$(VSTestCommand)"
